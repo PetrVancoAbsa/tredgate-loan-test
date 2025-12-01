@@ -124,11 +124,11 @@ function handleSubmit() {
 
 <style scoped>
 .loan-form {
-  max-width: 400px;
+  width: 100%;
 }
 
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .submit-btn {
