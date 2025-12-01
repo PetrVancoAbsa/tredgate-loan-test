@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { LoanApplication } from '../types/loan'
 import { calculateMonthlyPayment } from '../services/loanService'
+import ConfirmModal from './ConfirmModal.vue'
 
 defineProps<{
   loans: LoanApplication[]
@@ -12,6 +14,10 @@ const emit = defineEmits<{
   autoDecide: [id: string]
   delete: [id: string]
 }>()
+
+const isModalOpen = ref(false)
+const pendingDeleteId = ref<string>('')
+const pendingDeleteName = ref<string>('')
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -35,9 +41,22 @@ function formatDate(isoDate: string): string {
 }
 
 function handleDelete(id: string, applicantName: string) {
-  if (window.confirm(`Are you sure you want to delete the loan application for ${applicantName}?`)) {
-    emit('delete', id)
-  }
+  pendingDeleteId.value = id
+  pendingDeleteName.value = applicantName
+  isModalOpen.value = true
+}
+
+function confirmDelete() {
+  emit('delete', pendingDeleteId.value)
+  isModalOpen.value = false
+  pendingDeleteId.value = ''
+  pendingDeleteName.value = ''
+}
+
+function cancelDelete() {
+  isModalOpen.value = false
+  pendingDeleteId.value = ''
+  pendingDeleteName.value = ''
 }
 </script>
 
@@ -102,17 +121,25 @@ function handleDelete(id: string, applicantName: string) {
                 ⚡
               </button>
               <button
-                class="action-btn danger"
+                class="action-btn delete-btn"
                 @click="handleDelete(loan.id, loan.applicantName)"
                 title="Delete"
               >
-                🗑
+                <span class="material-icons">delete</span>
               </button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <ConfirmModal
+      :is-open="isModalOpen"
+      title="Delete Loan Application"
+      :message="`Are you sure you want to delete the loan application for ${pendingDeleteName}? This action cannot be undone.`"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </div>
 </template>
 
@@ -145,6 +172,24 @@ function handleDelete(id: string, applicantName: string) {
 
 .action-btn:last-child {
   margin-right: 0;
+}
+
+.delete-btn {
+  background-color: transparent;
+  color: var(--text-secondary);
+  padding: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-btn:hover {
+  color: var(--danger-color);
+  background-color: transparent;
+}
+
+.delete-btn .material-icons {
+  font-size: 1.25rem;
 }
 
 .no-actions {
