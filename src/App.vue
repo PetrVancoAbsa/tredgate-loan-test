@@ -5,26 +5,33 @@ import { getLoans, updateLoanStatus, autoDecideLoan } from './services/loanServi
 import LoanForm from './components/LoanForm.vue'
 import LoanList from './components/LoanList.vue'
 import LoanSummary from './components/LoanSummary.vue'
+import AuditLog from './components/AuditLog.vue'
 
 const loans = ref<LoanApplication[]>([])
+const auditLogRef = ref<InstanceType<typeof AuditLog> | null>(null)
 
 function refreshLoans() {
   loans.value = getLoans()
 }
 
+function refreshAll() {
+  refreshLoans()
+  auditLogRef.value?.refreshLogs()
+}
+
 function handleApprove(id: string) {
   updateLoanStatus(id, 'approved')
-  refreshLoans()
+  refreshAll()
 }
 
 function handleReject(id: string) {
   updateLoanStatus(id, 'rejected')
-  refreshLoans()
+  refreshAll()
 }
 
 function handleAutoDecide(id: string) {
   autoDecideLoan(id)
-  refreshLoans()
+  refreshAll()
 }
 
 onMounted(() => {
@@ -44,7 +51,7 @@ onMounted(() => {
 
     <main class="main-content">
       <div class="left-column">
-        <LoanForm @created="refreshLoans" />
+        <LoanForm @created="refreshAll" />
       </div>
       <div class="right-column">
         <LoanList
@@ -55,6 +62,8 @@ onMounted(() => {
         />
       </div>
     </main>
+
+    <AuditLog ref="auditLogRef" />
   </div>
 </template>
 
