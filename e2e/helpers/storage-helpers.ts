@@ -18,7 +18,7 @@ export async function clearLoans(page: Page): Promise<void> {
 /**
  * Get all loans from localStorage
  */
-export async function getLoans(page: Page): Promise<any[]> {
+export async function getLoans(page: Page): Promise<unknown[]> {
   return await page.evaluate((key) => {
     const stored = localStorage.getItem(key)
     return stored ? JSON.parse(stored) : []
