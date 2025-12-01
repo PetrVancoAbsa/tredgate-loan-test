@@ -81,7 +81,7 @@ const emit = defineEmits<{
 }
 
 .btn-ghost:hover {
-  background-color: #f8f9fa;
+  background-color: var(--hover-background);
   border-color: var(--text-secondary);
 }
 
@@ -98,7 +98,7 @@ const emit = defineEmits<{
 }
 
 .btn-delete:hover {
-  background-color: #c82333;
+  background-color: var(--danger-hover);
 }
 
 .btn-delete:active {
