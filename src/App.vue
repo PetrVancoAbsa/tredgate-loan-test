@@ -43,13 +43,17 @@ onMounted(() => {
     <LoanSummary :loans="loans" />
 
     <main class="main-content">
-      <LoanForm @created="refreshLoans" />
-      <LoanList
-        :loans="loans"
-        @approve="handleApprove"
-        @reject="handleReject"
-        @auto-decide="handleAutoDecide"
-      />
+      <div class="left-column">
+        <LoanForm @created="refreshLoans" />
+      </div>
+      <div class="right-column">
+        <LoanList
+          :loans="loans"
+          @approve="handleApprove"
+          @reject="handleReject"
+          @auto-decide="handleAutoDecide"
+        />
+      </div>
     </main>
   </div>
 </template>
@@ -62,6 +66,8 @@ onMounted(() => {
 .app-header {
   text-align: center;
   margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border-color);
 }
 
 .logo {
@@ -73,6 +79,7 @@ onMounted(() => {
 .tagline {
   color: var(--tagline-color);
   margin-top: -0.5rem;
+  font-size: 1.1rem;
 }
 
 .main-content {
@@ -81,13 +88,27 @@ onMounted(() => {
   align-items: flex-start;
 }
 
+.left-column {
+  flex: 0 0 400px;
+}
+
+.right-column {
+  flex: 1;
+  min-width: 0;
+}
+
 @media (max-width: 900px) {
   .main-content {
     flex-direction: column;
   }
 
-  .main-content > :first-child {
+  .left-column {
+    flex: 1;
+    width: 100%;
     max-width: 100%;
+  }
+
+  .right-column {
     width: 100%;
   }
 }
