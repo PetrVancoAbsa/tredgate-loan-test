@@ -116,3 +116,17 @@ export function autoDecideLoan(id: string): void {
 
   saveLoans(loans)
 }
+
+/**
+ * Delete a loan by ID
+ */
+export function deleteLoan(id: string): void {
+  const loans = getLoans()
+  const filteredLoans = loans.filter(loan => loan.id !== id)
+  
+  if (filteredLoans.length === loans.length) {
+    throw new Error(`Loan with id ${id} not found`)
+  }
+  
+  saveLoans(filteredLoans)
+}
