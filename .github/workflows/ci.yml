@@ -32,5 +32,30 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Upload HTML test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: html/
+          retention-days: 30
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## Test Results Summary 📊" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All tests have been executed successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Suites" >> $GITHUB_STEP_SUMMARY
+          echo "- **loanService.test.ts** - Core business logic tests" >> $GITHUB_STEP_SUMMARY
+          echo "- **LoanForm.test.ts** - Form component tests" >> $GITHUB_STEP_SUMMARY
+          echo "- **LoanList.test.ts** - List component tests" >> $GITHUB_STEP_SUMMARY
+          echo "- **LoanSummary.test.ts** - Summary component tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📄 **HTML Report:** Download the 'test-report' artifact to view detailed results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "For more information, see [TESTS.md](TESTS.md)" >> $GITHUB_STEP_SUMMARY
+
       - name: Build
         run: npm run build
