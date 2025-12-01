@@ -79,7 +79,7 @@ else
     --title "${ISSUE_TITLE}" \
     --body "${ISSUE_BODY}" \
     --label "self-healing" \
-    --assignee "copilot-swe-agent[bot]"
+    --assignee "@copilot"
   
   echo "Self-healing issue created successfully!"
 fi

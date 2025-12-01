@@ -3,7 +3,7 @@ name: Copilot Fix Request
 about: Auto-generated issue for Copilot agent to fix test failures
 title: '[Self-Healing] Test failure detected'
 labels: 'self-healing'
-assignees: 'copilot-swe-agent[bot]'
+assignees: ''
 ---
 
 ## Context
