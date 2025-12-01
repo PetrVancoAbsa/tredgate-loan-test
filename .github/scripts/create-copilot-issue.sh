@@ -1,85 +1,117 @@
 #!/bin/bash
-# create-copilot-issue.sh
-# Creates a GitHub issue assigned to the Copilot agent when tests fail.
-# 
-# Usage: ./create-copilot-issue.sh "<test_log>" "<run_id>" "<commit_sha>"
-
 set -e
 
-TEST_LOG="${1:-No test output available}"
-RUN_ID="${2:-unknown}"
-COMMIT_SHA="${3:-unknown}"
-WORKFLOW_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+LOG_FILE="$1"
+RUN_ID="$2"
+COMMIT_SHA="$3"
 
-# Create issue title with timestamp
-ISSUE_TITLE="[Self-Healing] Test failure detected - $(date -u +%Y-%m-%d)"
+REPO_OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f1)
+REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f2)
 
-# Create issue body using the template structure
+# Read logs
+if [ -f "$LOG_FILE" ]; then
+  LOGS=$(tail -100 "$LOG_FILE")
+else
+  LOGS="No logs available"
+fi
+
+# Build issue body
 ISSUE_BODY=$(cat <<EOF
-## Context
+## 🔴 Self-Healing Required
 
-A test failure was automatically detected by the self-healing workflow.
+A test has failed and requires automated fixing.
 
-- **Workflow Run**: [View Logs](${WORKFLOW_URL})
-- **Commit**: \`${COMMIT_SHA}\`
-- **Detected At**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+### Failure Details
+| Detail | Value |
+|--------|-------|
+| **Workflow Run** | [View Run](https://github. com/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}) |
+| **Commit** | \`${COMMIT_SHA}\` |
+| **Branch** | \`${GITHUB_REF_NAME}\` |
 
-## Problem
-
-The test \`tests/failing_heal.spec.ts\` is failing. This is a self-healing demo test designed to be fixed by the Copilot agent.
-
-### Test Output
-
+### Error Logs
 \`\`\`
-${TEST_LOG}
+${LOGS}
 \`\`\`
 
-## Proposed Solution
-
-Please review the test file \`tests/failing_heal.spec.ts\` and fix the failing assertion. Follow the instructions in \`.github/agents/copilot-healing-agent.md\` for guidance.
-
-## Additional Information
-
-- **File to fix**: \`tests/failing_heal.spec.ts\`
-- **Agent instructions**: \`.github/agents/copilot-healing-agent.md\`
-- **Repository conventions**: \`.github/copilot-instructions.md\`
-
-### Acceptance Criteria
-
-1. The test in \`tests/failing_heal.spec.ts\` passes
-2. No other tests are broken
-3. Changes follow existing code style
+### Instructions for Copilot
+1.  Analyze the error logs above
+2. Identify the root cause of the failure
+3.  Fix the failing test or the code it tests
+4. Create a pull request with the fix
+5. Ensure all tests pass
 EOF
 )
 
-# Check if there's already an open issue for self-healing
-EXISTING_ISSUE=$(gh issue list --label "self-healing" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+ISSUE_TITLE="🤖 Self-Healing: Test failure on ${GITHUB_REF_NAME}"
 
-if [ -n "$EXISTING_ISSUE" ]; then
-  echo "Updating existing self-healing issue #${EXISTING_ISSUE}"
-  gh issue comment "${EXISTING_ISSUE}" --body "## New Failure Detected
+echo "Creating new self-healing issue..."
 
-A new test failure was detected at $(date -u +"%Y-%m-%d %H:%M:%S UTC").
+# Step 1: Create the issue WITHOUT assignee first
+ISSUE_URL=$(gh issue create \
+  --title "$ISSUE_TITLE" \
+  --body "$ISSUE_BODY" \
+  --label "bug" \
+  --label "automated" \
+  2>&1)
 
-**Workflow Run**: [View Logs](${WORKFLOW_URL})
-**Commit**: \`${COMMIT_SHA}\`
+# Extract issue number from URL
+ISSUE_NUMBER=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
 
-### Test Output
-\`\`\`
-${TEST_LOG}
-\`\`\`"
-else
-  echo "Creating new self-healing issue..."
+echo "Issue created: $ISSUE_URL (Issue #$ISSUE_NUMBER)"
+
+# Step 2: Get the issue node ID using GraphQL
+echo "Getting issue node ID..."
+ISSUE_NODE_ID=$(gh api graphql -f query='
+  query($owner: String!, $repo: String!, $number: Int!) {
+    repository(owner: $owner, name: $repo) {
+      issue(number: $number) {
+        id
+      }
+    }
+  }
+' -f owner="$REPO_OWNER" -f repo="$REPO_NAME" -F number="$ISSUE_NUMBER" --jq '.data.repository.issue.id')
+
+echo "Issue Node ID: $ISSUE_NODE_ID"
+
+# Step 3: Get Copilot's user/actor ID
+echo "Getting Copilot actor ID..."
+COPILOT_ID=$(gh api graphql -f query='
+  query {
+    user(login: "copilot") {
+      id
+    }
+  }
+' --jq '.data. user.id' 2>/dev/null || echo "")
+
+# If user lookup fails, try bot lookup
+if [ -z "$COPILOT_ID" ]; then
+  echo "Trying bot lookup..."
+  # The Copilot coding agent might be identified differently
+  # We'll mention @copilot in the issue body instead as a fallback
+  echo "Could not find Copilot actor ID.  Adding @copilot mention to issue..."
   
-  # Create label if it doesn't exist
-  gh label create "self-healing" --description "Issues created by the self-healing workflow" --color "FFA500" 2>/dev/null || true
-  
-  # Create the issue
-  gh issue create \
-    --title "${ISSUE_TITLE}" \
-    --body "${ISSUE_BODY}" \
-    --label "self-healing" \
-    --assignee "@copilot"
-  
-  echo "Self-healing issue created successfully!"
+  # Update issue to mention copilot
+  gh issue comment "$ISSUE_NUMBER" --body "@copilot Please analyze this failure and create a fix."
+  echo "Added @copilot mention to issue."
+  exit 0
 fi
+
+# Step 4: Assign Copilot using GraphQL mutation
+echo "Assigning Copilot to issue..."
+gh api graphql -f query='
+  mutation($issueId: ID!, $actorIds: [ID!]!) {
+    replaceActorsForAssignable(input: {
+      assignableId: $issueId,
+      actorIds: $actorIds
+    }) {
+      assignable {
+        ...  on Issue {
+          id
+          number
+        }
+      }
+    }
+  }
+' -f issueId="$ISSUE_NODE_ID" -f actorIds="[\"$COPILOT_ID\"]"
+
+echo "Successfully assigned Copilot to issue #$ISSUE_NUMBER!"
