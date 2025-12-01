@@ -1,14 +1,8 @@
 import type { LoanApplication, LoanStatus, CreateLoanInput } from '../types/loan'
 import { auditLoanCreated, auditStatusChangedManual, auditStatusChangedAuto } from './auditLogService'
+import { generateId } from './utils'
 
 const STORAGE_KEY = 'tredgate_loans'
-
-/**
- * Generate a simple unique ID
- */
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 9)
-}
 
 /**
  * Load loans from localStorage

@@ -60,6 +60,10 @@ function formatStatusChange(entry: AuditLogEntry): string {
   return '—'
 }
 
+function getMethodClass(method: string): string {
+  return method === 'n/a' ? 'na' : method
+}
+
 onMounted(() => {
   refreshLogs()
 })
@@ -108,7 +112,7 @@ defineExpose({ refreshLogs })
             <td>{{ entry.applicantName }}</td>
             <td>{{ formatStatusChange(entry) }}</td>
             <td>
-              <span :class="['method-badge', `method-${entry.decisionMethod}`]">
+              <span :class="['method-badge', `method-${getMethodClass(entry.decisionMethod)}`]">
                 {{ entry.decisionMethod }}
               </span>
             </td>
@@ -240,7 +244,7 @@ td {
   color: #e65100;
 }
 
-.method-n\/a {
+.method-na {
   background-color: var(--background-light);
   color: var(--text-secondary);
 }

@@ -1,15 +1,9 @@
 import type { AuditLogEntry, AuditActionType, DecisionMethod } from '../types/auditLog'
 import type { LoanStatus } from '../types/loan'
+import { generateId } from './utils'
 
 const AUDIT_STORAGE_KEY = 'tredgate_audit_logs'
 const MAX_AUDIT_ENTRIES = 1000 // Prune to this limit
-
-/**
- * Generate a simple unique ID for audit entries
- */
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 9)
-}
 
 /**
  * Load audit logs from localStorage
