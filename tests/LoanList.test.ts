@@ -155,7 +155,8 @@ describe('LoanList.vue', () => {
     })
 
     const paymentCell = wrapper.find('tbody tr td:nth-child(5)')
-    // 50000 * 1.08 / 24 = 2250
+    // Monthly payment should be displayed correctly
+    // 50000 * (1 + 0.08) / 24 = 2250
     expect(paymentCell.text()).toContain('$2,250')
   })
 

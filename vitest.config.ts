@@ -22,6 +22,7 @@ export default defineConfig({
         '**/main.ts'
       ]
     },
+    // Always generate HTML reports for better debugging and CI artifacts
     reporters: ['default', 'html']
   }
 })
